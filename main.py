@@ -17,7 +17,7 @@ listImage = [
     "images/objets4.jpg"
 ]
 
-defaultImage = listImage[0]
+defaultImage = listImage[2]
 
 parser = argparse.ArgumentParser(description='Object counting tool')
 parser.add_argument('--image', help='Path to the input image.', default=defaultImage)
@@ -31,11 +31,31 @@ config = {
     "blurKennelSize": 1, #value*2 +1
     "cannyMinThreshold": 100,
     "cannyMaxThreshold": 200,
+    "SinusThreshold": 180
 }
 
 cv.imshow("Origin image", originImg)
 
 grayImg = cv.cvtColor(originImg, cv.COLOR_BGR2GRAY)
+
+f = np.fft.fft2(grayImg)
+fshift = np.fft.fftshift(f)
+magnitude_spectrum = np.log(1 + np.abs(fshift))
+magnitude_spectrum = cv.normalize(src=magnitude_spectrum, dst=None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX,
+                                  dtype=cv.CV_8U)
+cv.imshow("magitude_spectrum", np.uint8(magnitude_spectrum))
+h, w = fshift.shape[:2]
+temp = fshift[h // 2][w // 2]
+fshift = np.where(magnitude_spectrum > config["SinusThreshold"], 0, fshift)
+magnitude_spectrum = np.where(magnitude_spectrum > config["SinusThreshold"], 0, magnitude_spectrum)
+cv.imshow("magitude_spectrum_after", np.uint8(magnitude_spectrum))
+fshift[h // 2][w // 2] = temp
+f_ishift = np.fft.ifftshift(fshift)
+img_back = np.fft.ifft2(f_ishift)
+img_back = np.real(img_back)
+cv.imshow("After", np.uint8(img_back))
+grayImg = np.uint8(img_back)
+
 cv.imshow("Gray image", grayImg)
 
 blurWindowName = "Blur image(medianBlur)"

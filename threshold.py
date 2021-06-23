@@ -30,7 +30,7 @@ config013 = {
 
 config2 = {
     "BlurKsize": 1, #2*value+1
-    "BlockSize": 200, #2*value+1
+    "BlockSize": 50, #2*value+1
     "C": 0,
     "OpeningKsize": 4,
     "Invert": False,
@@ -65,8 +65,8 @@ config7 = {
     "Sinus" : False,
 }
 
-defaultImage = listImage[2]
-config = config2
+defaultImage = listImage[7]
+config = config7
 parser = argparse.ArgumentParser(description='Object counting tool')
 parser.add_argument('--image', help='Path to the input image.', default=defaultImage)
 args = parser.parse_args()
@@ -114,9 +114,9 @@ cv.createTrackbar("Ksize", openingWindowName, config["OpeningKsize"], 100, nothi
 regionWindowName = "Region"
 cv.namedWindow(regionWindowName)
 
-colors = []
-for i in range(10000):
-    colors.append(list(np.random.random(size=3) * 256))
+# colors = []
+# for i in range(10000):
+#     colors.append(list(np.random.random(size=3) * 256))
 
 while True:
     blurKsize = cv.getTrackbarPos("Blur level", blurWindowName)
@@ -161,6 +161,11 @@ while True:
     cv.imshow(regionWindowName, regionImg)
     k = cv.waitKey(100)
     if k == 13:# press enter to exit
+        cv.imwrite("ImageGray.png", grayImg)
+        cv.imwrite("ImageBlur.png", blurImg)
+        cv.imwrite("ImageBinary.png", binaryImg)
+        cv.imwrite("ImageOpening.png", openImg)
+        cv.imwrite("ImageRegion.png", regionImg)
         break
 
 cv.destroyAllWindows()
