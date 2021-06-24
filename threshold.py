@@ -8,6 +8,7 @@ from matplotlib import pyplot as plt
 def nothing(value):
     pass
 
+
 listImage = [
     "images/1_wIXlvBeAFtNVgJd49VObgQ.png",
     "images/1_wIXlvBeAFtNVgJd49VObgQ.png_Salt_Pepper_Noise1.png",
@@ -19,56 +20,60 @@ listImage = [
     "images/objets4.jpg"
 ]
 
-config013 = {
-    "BlurKsize": 1, #2*value+1
-    "BlockSize": 200, #2*value+1
+configs = [{}]*8
+
+configs[0] = configs[1] = configs[3] = {
+    "BlurKsize": 1,  # 2*value+1
+    "BlockSize": 200,  # 2*value+1
     "C": 0,
     "OpeningKsize": 4,
     "Invert": False,
-    "Sinus" : False,
+    "Sinus": False,
 }
 
-config2 = {
-    "BlurKsize": 1, #2*value+1
-    "BlockSize": 50, #2*value+1
+configs[2] = {
+    "BlurKsize": 1,  # 2*value+1
+    "BlockSize": 50,  # 2*value+1
     "C": 0,
     "OpeningKsize": 4,
     "Invert": False,
-    "Sinus" : True,
+    "Sinus": True,
     "SinusThreshold": 230,
 }
 
-config4 = {
-    "BlurKsize": 0, #2*value+1
-    "BlockSize": 150, #2*value+1
+configs[4] = {
+    "BlurKsize": 0,  # 2*value+1
+    "BlockSize": 150,  # 2*value+1
     "C": 20,
     "OpeningKsize": 16,
     "Invert": True,
-    "Sinus" : False,
+    "Sinus": False,
 }
 
-config56 = {
-    "BlurKsize": 1, #2*value+1
-    "BlockSize": 200, #2*value+1
+configs[5] = configs[6] = {
+    "BlurKsize": 1,  # 2*value+1
+    "BlockSize": 200,  # 2*value+1
     "C": 20,
     "OpeningKsize": 16,
     "Invert": True,
-    "Sinus" : False,
+    "Sinus": False,
 }
 
-config7 = {
-    "BlurKsize": 0, #2*value+1
-    "BlockSize": 200, #2*value+1
+configs[7] = {
+    "BlurKsize": 0,  # 2*value+1
+    "BlockSize": 200,  # 2*value+1
     "C": 21,
     "OpeningKsize": 16,
     "Invert": True,
-    "Sinus" : False,
+    "Sinus": False,
 }
 
-defaultImage = listImage[7]
-config = config7
+index = 1
+defaultImage = listImage[index]
+config = configs[index]
 parser = argparse.ArgumentParser(description='Object counting tool')
-parser.add_argument('--image', help='Path to the input image.', default=defaultImage)
+parser.add_argument(
+    '--image', help='Path to the input image.', default=defaultImage)
 args = parser.parse_args()
 
 originImg = cv.imread(args.image)
@@ -84,12 +89,14 @@ if (config["Sinus"]):
     f = np.fft.fft2(grayImg)
     fshift = np.fft.fftshift(f)
     magnitude_spectrum = np.log(1 + np.abs(fshift))
-    magnitude_spectrum = cv.normalize(src=magnitude_spectrum, dst=None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
+    magnitude_spectrum = cv.normalize(
+        src=magnitude_spectrum, dst=None, alpha=0, beta=255, norm_type=cv.NORM_MINMAX, dtype=cv.CV_8U)
     cv.imshow("magitude_spectrum", np.uint8(magnitude_spectrum))
     h, w = fshift.shape[:2]
     temp = fshift[h//2][w//2]
-    fshift = np.where(magnitude_spectrum > config["SinusThreshold"], 0 , fshift)
-    magnitude_spectrum = np.where(magnitude_spectrum > config["SinusThreshold"], 0, magnitude_spectrum)
+    fshift = np.where(magnitude_spectrum > config["SinusThreshold"], 0, fshift)
+    magnitude_spectrum = np.where(
+        magnitude_spectrum > config["SinusThreshold"], 0, magnitude_spectrum)
     cv.imshow("magitude_spectrum_after", np.uint8(magnitude_spectrum))
     fshift[h//2][w//2] = temp
     f_ishift = np.fft.ifftshift(fshift)
@@ -100,16 +107,19 @@ if (config["Sinus"]):
 
 blurWindowName = "Blur Image"
 cv.namedWindow(blurWindowName)
-cv.createTrackbar("Blur level", blurWindowName, config["BlurKsize"], 15, nothing)
+cv.createTrackbar("Blur level", blurWindowName,
+                  config["BlurKsize"], 15, nothing)
 
 binaryWindowName = "Binary Image"
 cv.namedWindow(binaryWindowName)
 cv.createTrackbar("C", binaryWindowName, config["C"], 255, nothing)
-cv.createTrackbar("BlockSize", binaryWindowName, config["BlockSize"], 1000, nothing)
+cv.createTrackbar("BlockSize", binaryWindowName,
+                  config["BlockSize"], 1000, nothing)
 
 openingWindowName = "Opening/Closing Image"
 cv.namedWindow(openingWindowName)
-cv.createTrackbar("Ksize", openingWindowName, config["OpeningKsize"], 100, nothing)
+cv.createTrackbar("Ksize", openingWindowName,
+                  config["OpeningKsize"], 100, nothing)
 
 regionWindowName = "Region"
 cv.namedWindow(regionWindowName)
@@ -129,15 +139,18 @@ while True:
     if(BlockSize == 0):
         BlockSize = 1
     thresholdType = cv.THRESH_BINARY_INV if config["Invert"] else cv.THRESH_BINARY
-    binaryImg = cv.adaptiveThreshold(blurImg, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, thresholdType, 2*BlockSize+1, C)
+    binaryImg = cv.adaptiveThreshold(
+        blurImg, 255, cv.ADAPTIVE_THRESH_GAUSSIAN_C, thresholdType, 2*BlockSize+1, C)
     cv.imshow(binaryWindowName, binaryImg)
 
     OpeningKsize = cv.getTrackbarPos("Ksize", openingWindowName)
     kernel = np.ones((OpeningKsize, OpeningKsize), np.uint8)
-    openImg = cv.morphologyEx(binaryImg, cv.MORPH_CLOSE, kernel) if config["Invert"] else cv.morphologyEx(binaryImg, cv.MORPH_OPEN, kernel)
+    openImg = cv.morphologyEx(binaryImg, cv.MORPH_CLOSE, kernel) if config["Invert"] else cv.morphologyEx(
+        binaryImg, cv.MORPH_OPEN, kernel)
     cv.imshow(openingWindowName, openImg)
 
-    contours, hierarchy = cv.findContours(openImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
+    contours, hierarchy = cv.findContours(
+        openImg, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
 
     regionImg = originImg.copy()
     h, w = regionImg.shape[:2]
@@ -145,7 +158,7 @@ while True:
 
     count = 0
     for contour in contours:
-        #if(cv.contourArea(contour) > imgArea /3): continue
+        # if(cv.contourArea(contour) > imgArea /3): continue
         #cv.drawContours(regionImg, [contour], -1, colors[count], cv.FILLED)
 
         peri = cv.arcLength(contour, True)
@@ -154,13 +167,14 @@ while True:
         cv.rectangle(regionImg, (x, y), (x + w, y + h), (255, 0, 0), 1)
 
         cv.imshow(regionWindowName, regionImg)
-        count +=1
+        count += 1
         # cv.waitKey()
 
-    cv.putText(regionImg, "Count: " + str(count), (0, 50), cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+    cv.putText(regionImg, "Count: " + str(count), (0, 50),
+               cv.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
     cv.imshow(regionWindowName, regionImg)
     k = cv.waitKey(100)
-    if k == 13:# press enter to exit
+    if k == 13:  # press enter to exit
         cv.imwrite("ImageGray.png", grayImg)
         cv.imwrite("ImageBlur.png", blurImg)
         cv.imwrite("ImageBinary.png", binaryImg)
